@@ -1,5 +1,4 @@
 import zipfile
-from typing import List
 
 from tqdm import tqdm
 
@@ -54,23 +53,24 @@ def extract(source_path: str):
                 }
 
 
-def update_annotations(source_path, docs: List[Document]):
-    with zipfile.ZipFile(source_path) as zh_all:
-        brat_file = [f for f in zh_all.filelist if f.filename.endswith('brat-project-final.zip')][0]
-        with zipfile.ZipFile(zh_all.open(brat_file)) as zh_brat:
-            for doc in docs:
-                content = zh_brat.open(doc.meta['path'][:-3] + 'ann').read().decode().splitlines(keepends=True)
-                annos = [tuple(a.strip().split("\t")) for a in content]
-                arguments = extract_arguments(annos, doc.text)
-                words = doc.get_tokens()
-                relations = [
-                    Relation([t for t in words if
-                              arg['Arg1']['offset'] <= t.offset_begin <= (
-                                          arg['Arg1']['offset'] + arg['Arg1']['length'])],
-                             [t for t in words if
-                              arg['Arg2']['offset'] <= t.offset_begin <= (
-                                          arg['Arg2']['offset'] + arg['Arg2']['length'])],
-                             [],
-                             arg['Sense'], 'Argumentation') for arg in arguments
-                ]
-                yield doc.with_relations(relations)
+def update_annotations(source_path: str):
+    zh_all = zipfile.ZipFile(source_path)
+    brat_file = [f for f in zh_all.filelist if f.filename.endswith('brat-project-final.zip')][0]
+    zh_brat = zipfile.ZipFile(zh_all.open(brat_file))
+
+    def helper(doc: Document):
+        content = zh_brat.open(doc.meta['path'][:-3] + 'ann').read().decode().splitlines(keepends=True)
+        annos = [tuple(a.strip().split("\t")) for a in content]
+        arguments = extract_arguments(annos, doc.text)
+        words = doc.get_tokens()
+        relations = [
+            Relation([t for t in words if
+                      arg['Arg1']['offset'] <= t.offset_begin <= (arg['Arg1']['offset'] + arg['Arg1']['length'])],
+                     [t for t in words if
+                      arg['Arg2']['offset'] <= t.offset_begin <= (arg['Arg2']['offset'] + arg['Arg2']['length'])],
+                     [],
+                     arg['Sense'], 'Argumentation') for arg in arguments
+        ]
+        return doc.with_relations(relations)
+
+    return helper

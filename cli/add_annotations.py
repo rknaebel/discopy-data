@@ -1,6 +1,7 @@
+import sys
+
 import click
 import ujson as json
-from tqdm import tqdm
 
 import discopy_data.dataset.argessay
 import discopy_data.dataset.pdtb
@@ -18,13 +19,15 @@ document_annotations = {
 @click.option('-s', '--src', default='-', type=click.File('r'))
 @click.option('-o', '--tgt', default='-', type=click.File('w'))
 def main(corpus, annotations, src, tgt):
-    t = tqdm()
-    update_annotations = document_annotations[corpus]
-    docs = [Document.from_json(json.loads(line)) for line in src if line.strip()]
-    for doc in update_annotations(annotations, docs):
+    update_annotations = document_annotations[corpus](annotations)
+    for line in src:
+        if not line.strip():
+            continue
+        doc = Document.from_json(json.loads(line))
+        doc = update_annotations(doc)
         tgt.write(json.dumps(doc.to_json()) + '\n')
-        t.update(1)
-    t.close()
+        tgt.flush()
+    sys.stderr.write('Annotation done!\n')
 
 
 if __name__ == '__main__':
