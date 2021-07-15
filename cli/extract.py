@@ -14,6 +14,7 @@ import discopy_data.dataset.bbc
 import discopy_data.dataset.global_voices
 import discopy_data.dataset.pdtb
 import discopy_data.dataset.press_gov
+import discopy_data.dataset.raw
 import discopy_data.dataset.short_stories
 import discopy_data.dataset.ted
 import discopy_data.dataset.un_debates
@@ -31,6 +32,7 @@ document_extractor = {
     'short-stories': discopy_data.dataset.short_stories.extract,
     'ted': discopy_data.dataset.ted.extract,
     'un-debates': discopy_data.dataset.un_debates.extract,
+    'raw': discopy_data.dataset.raw.extract_raw,
 }
 
 
@@ -112,8 +114,9 @@ def get_parsed_sentences(parser, doc) -> List[dict]:
 @click.argument('src', type=click.Path('r'))
 @click.option('-o', '--tgt', default='-', type=click.File('w'))
 @click.option('-l', '--limit', default=0, type=int)
-def main(corpus, src, tgt, limit):
-    parser = load_parser()
+@click.option('--use-gpu', is_flag=True)
+def main(corpus, src, tgt, limit, use_gpu):
+    parser = load_parser(use_gpu=use_gpu)
     t = tqdm()
     doc_i = 0
     for doc in document_extractor[corpus](src):
