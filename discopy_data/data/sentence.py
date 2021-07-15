@@ -47,11 +47,10 @@ class Sentence:
 
     def to_json(self) -> dict:
         return {
-            'dependencies': [(
-                d.rel,
-                f"{d.head.surface if d.head else 'ROOT'}-{d.head.local_idx if d.head else -1 + 1}",
-                f"{d.dep.surface}-{d.dep.local_idx + 1}"
-            ) for d in self.dependencies],
+            'dependencies': [{
+                'head': (d.head.local_idx if d.head else -1),
+                'deprel': d.rel
+            } for d in self.dependencies],
             'parsetree': self.parsetree,
-            'words': [t.to_json() for t in self.tokens]
+            'tokens': [t.to_json() for t in self.tokens]
         }

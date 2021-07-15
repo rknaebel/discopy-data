@@ -3,9 +3,11 @@ from typing import List
 
 class Token:
 
-    def __init__(self, idx, sent_idx, local_idx, offset_begin, offset_end, surface, tag=""):
+    def __init__(self, idx, sent_idx, local_idx, offset_begin, offset_end, surface, upos="", xpos="", lemma=""):
         self.surface: str = surface
-        self.tag: str = tag
+        self.upos: str = upos
+        self.xpos: str = xpos
+        self.lemma: str = lemma
         # global word index
         self.idx: int = idx
         # sentence index
@@ -16,7 +18,7 @@ class Token:
         self.offset_end: int = offset_end
 
     def __str__(self):
-        return f"{self.idx}-{self.surface}:{self.tag}"
+        return f"{self.idx}-{self.surface}:{self.upos}"
 
     def __hash__(self):
         return hash(str(self))
@@ -24,18 +26,21 @@ class Token:
     __repr__ = __str__
 
     def to_json(self):
-        return (self.surface,
-                {'CharacterOffsetBegin': self.offset_begin,
-                 'CharacterOffsetEnd': self.offset_end,
-                 'Linkers': [],
-                 'PartOfSpeech': self.tag})
+        return {
+            'surface': self.surface,
+            'characterOffsetBegin': self.offset_begin,
+            'characterOffsetEnd': self.offset_end,
+            'upos': self.upos,
+            'xpos': self.xpos,
+            'lemma': self.lemma
+        }
 
     def to_json_indices(self):
         return self.offset_begin, self.offset_end, self.idx, self.sent_idx, self.local_idx
 
     def __eq__(self, other: 'Token'):
         return all([
-            self.idx == other.idx, self.surface == other.surface, self.tag == other.tag,
+            self.idx == other.idx, self.surface == other.surface, self.upos == other.upos,
             self.sent_idx == other.sent_idx, self.local_idx == other.local_idx, self.offset_begin == other.offset_begin,
             self.offset_end == other.offset_end
         ])

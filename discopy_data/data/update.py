@@ -45,7 +45,7 @@ def update_dataset_parses(docs: List[Document], constituent_parser='crf-con-en',
     dparser = supar.Parser.load(dependency_parser) if dependency_parser else None
     for doc in docs:
         for sent_i, sent in enumerate(doc.sentences):
-            inputs = [(t.surface, t.tag) for t in sent.tokens]
+            inputs = [(t.surface, t.upos) for t in sent.tokens]
             parsetree = get_constituent_parse(cparser, inputs) if cparser else None
             dependencies = get_dependency_parse(dparser, inputs, sent.tokens) if dparser else None
             doc.sentences[sent_i].dependencies = dependencies if dependency_parser else sent.dependencies

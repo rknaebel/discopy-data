@@ -51,7 +51,7 @@ def get_parsed_sentences_raw(parser, doc):
     for sent_i, sent in enumerate(parsed['sentences']):
         words = [
             Token(token_offset + w_i, sent_i, w_i, t['dspan'][0], t['dspan'][1], t['text'],
-                  t['upos'])
+                  upos=t['upos'], xpos=t['xpos'], lemma=t['lemma'])
             for w_i, t in enumerate(sent['tokens'])
         ]
         dependencies = [
@@ -77,7 +77,7 @@ simple_map = {
 
 
 def get_parsed_sentences_tokenized(parser, doc):
-    doc = Document.from_json(doc)
+    doc = Document.from_json(doc, load_dependencies=False, load_relations=False)
     parser_in = [[simple_map.get(t.surface, t.surface) for t in sent.tokens] for sent in doc.sentences]
     parsed = parser(parser_in)
     token_offset = 0
@@ -86,12 +86,14 @@ def get_parsed_sentences_tokenized(parser, doc):
         words = doc.sentences[sent_i].tokens
         assert len(words) == len(sent['tokens']), 'different number of tokens after parsing'
         for w, t in zip(words, sent['tokens']):
-            w.pos = t['upos']
+            w.upos = t['upos']
+            w.xpos = t['xpos']
+            w.lemma = t['lemma']
         dependencies = [
             DepRel(rel=t['deprel'].lower(),
-                   head=words[int(t['head']) - 1] if t['deprel'].lower() != 'root' else None,
-                   dep=words[dep]
-                   ) for dep, t in enumerate(sent['tokens'])
+                   head=words[t['head'] - 1] if t['deprel'].lower() != 'root' else None,
+                   dep=words[t_i]
+                   ) for t_i, t in enumerate(sent['tokens'])
         ]
         token_offset += len(words)
         sents.append(Sentence(words, dependencies=dependencies).to_json())
@@ -123,9 +125,11 @@ def main(corpus, src, tgt, limit):
         sentences = get_parsed_sentences(parser, doc)
         doc['sentences'] = sentences
         tgt.write(json.dumps(doc) + '\n')
+        tgt.flush()
         doc_i += 1
         t.update(1)
     t.close()
+    sys.stderr.write('Extraction done!\n')
 
 
 if __name__ == '__main__':

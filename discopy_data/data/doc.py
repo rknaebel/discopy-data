@@ -1,10 +1,12 @@
 import json
+import sys
 from typing import List
 
 import numpy as np
 
 from .relation import Relation
-from .sentence import Sentence
+from .sentence import Sentence, DepRel
+from .token import Token
 
 
 class Document:
@@ -23,6 +25,43 @@ class Document:
             'sentences': [s.to_json() for s in self.sentences],
             'relations': [r.to_json(self.doc_id, rel_id=r_i) for r_i, r in enumerate(self.relations)]
         }
+
+    @staticmethod
+    def from_json(doc: dict, load_dependencies=True, load_relations=True):
+        words = []
+        token_offset = 0
+        sents = []
+        for sent_i, sent in enumerate(doc['sentences']):
+            sent_words = [
+                Token(token_offset + w_i, sent_i, w_i, t['characterOffsetBegin'], t['characterOffsetEnd'], t['surface'],
+                      upos=t.get('upos', ""), xpos=t.get('xpos', ""), lemma=t.get('lemma', ""))
+                for w_i, t in enumerate(sent['tokens'])
+            ]
+            words.extend(sent_words)
+            token_offset += len(sent_words)
+            if load_dependencies:
+                dependencies = [
+                    DepRel(rel=t['deprel'],
+                           head=sent_words[int(t['head'])] if t['head'] > 0 else None,
+                           dep=sent_words[t_i]
+                           ) for t_i, t in enumerate(sent.get('dependencies', []))
+                ]
+                if not dependencies:
+                    sys.stderr.write(f"No dependencies in {doc['docID']}-{sent_i}")
+            else:
+                dependencies = []
+            sents.append(Sentence(sent_words, dependencies=dependencies, parsetree=sent.get('parsetree')))
+        if load_relations:
+            relations = [
+                Relation([words[i] for i in rel['Arg1']['TokenList']],
+                         [words[i] for i in rel['Arg2']['TokenList']],
+                         [words[i] for i in rel['Connective']['TokenList']],
+                         rel['Sense'], rel['Type'])
+                for rel in doc.get('relations', [])
+            ]
+        else:
+            relations = []
+        return Document(doc_id=doc['docID'], sentences=sents, relations=relations, meta=doc.get('meta'))
 
     def get_tokens(self):
         return [token for sent in self.sentences for token in sent.tokens]
