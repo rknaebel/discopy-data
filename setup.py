@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
       long_description = fh.read()
 
 setup(name='discopy-data-rknaebel',
-      version='0.0.1',
+      version='0.1.0',
       description='Data and Structures for Neural Discourse Parsing',
       long_description=long_description,
       long_description_content_type="text/markdown",

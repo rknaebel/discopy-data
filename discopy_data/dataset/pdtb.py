@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 
 from discopy_data.data.doc import Document
+from discopy_data.data.loaders.conll import connective_head, convert_sense
 from discopy_data.data.relation import Relation
 from discopy_data.data.sentence import Sentence
 from discopy_data.data.token import Token
@@ -181,7 +182,7 @@ def extract(src: str):
             yield Document(doc_id=doc_id, sentences=sentences, relations=[], meta=meta).to_json()
 
 
-def update_annotations(src: str):
+def update_annotations(src: str, options: dict):
     relations_grouped = defaultdict(list)
     for part in ['en.train', 'en.dev', 'en.test', 'en.blind-test']:
         try:
@@ -191,13 +192,19 @@ def update_annotations(src: str):
         except FileNotFoundError:
             continue
 
+    simple_connectives = options.get('simple_connectives', False)
+    sense_level = options.get('sense_level', -1)
+
     def helper(doc: Document):
+        relations = relations_grouped[doc.doc_id]
+        if simple_connectives:
+            connective_head(relations)
         words = doc.get_tokens()
         doc_relations = [
             Relation([words[t[2]] for t in rel['Arg1']['TokenList']],
                      [words[t[2]] for t in rel['Arg2']['TokenList']],
                      [words[t[2]] for t in rel['Connective']['TokenList']],
-                     rel['Sense'],
+                     [convert_sense(s, sense_level) for s in rel['Sense']],
                      rel['Type']) for rel in relations_grouped[doc.doc_id]
         ]
         return doc.with_relations(doc_relations)

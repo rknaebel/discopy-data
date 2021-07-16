@@ -53,7 +53,7 @@ def extract(source_path: str):
                 }
 
 
-def update_annotations(source_path: str):
+def update_annotations(source_path: str, options: dict):
     zh_all = zipfile.ZipFile(source_path)
     brat_file = [f for f in zh_all.filelist if f.filename.endswith('brat-project-final.zip')][0]
     zh_brat = zipfile.ZipFile(zh_all.open(brat_file))

@@ -18,8 +18,14 @@ document_annotations = {
 @click.argument('annotations', type=str)
 @click.option('-s', '--src', default='-', type=click.File('r'))
 @click.option('-o', '--tgt', default='-', type=click.File('w'))
-def main(corpus, annotations, src, tgt):
-    update_annotations = document_annotations[corpus](annotations)
+@click.option('--simple-connective', is_flag=True)
+@click.option('--sense-level', default=-1, type=int)
+def main(corpus, annotations, src, tgt, simple_connective, sense_level):
+    options = {
+        'simple_connectives': simple_connective,
+        'sense_level': sense_level,
+    }
+    update_annotations = document_annotations[corpus](annotations, options)
     for line in src:
         if not line.strip():
             continue
