@@ -23,7 +23,7 @@ def convert_sense(s, lvl):
         return s
 
 
-def load_parsed_conll_dataset(conll_path: str, simple_connectives=False) -> List[Document]:
+def load_parsed_conll_dataset(conll_path: str, simple_connectives=False, limit=0, sense_level=-1) -> List[Document]:
     parses_path = os.path.join(conll_path, 'parses.json')
     relations_path = os.path.join(conll_path, 'relations.json')
     docs = []
@@ -32,21 +32,23 @@ def load_parsed_conll_dataset(conll_path: str, simple_connectives=False) -> List
     for relation in [json.loads(s) for s in open(relations_path, 'r').readlines()]:
         pdtb[relation['DocID']].append(relation)
     for doc_id, doc in tqdm(parses.items(), total=len(parses)):
+        if 0 < limit < len(docs):
+            break
         words = []
         token_offset = 0
         sents = []
         for sent_i, sent in enumerate(doc['sentences']):
             sent_words = [
                 Token(token_offset + w_i, sent_i, w_i, t['CharacterOffsetBegin'], t['CharacterOffsetEnd'], surface,
-                      t['PartOfSpeech'])
+                      xpos=t['PartOfSpeech'])
                 for w_i, (surface, t) in enumerate(sent['words'])
             ]
             words.extend(sent_words)
             token_offset += len(sent_words)
             dependencies = [
                 DepRel(rel=rel,
-                       head=words[int(head.split('-')[-1]) - 1] if not head.startswith('ROOT') else None,
-                       dep=words[int(dep.split('-')[-1]) - 1]
+                       head=sent_words[int(head.split('-')[-1]) - 1] if not head.startswith('ROOT') else None,
+                       dep=sent_words[int(dep.split('-')[-1]) - 1]
                        ) for rel, head, dep in sent['dependencies']
             ]
             sents.append(Sentence(sent_words, dependencies=dependencies, parsetree=sent['parsetree']))
@@ -57,7 +59,7 @@ def load_parsed_conll_dataset(conll_path: str, simple_connectives=False) -> List
             Relation([words[i[2]] for i in rel['Arg1']['TokenList']],
                      [words[i[2]] for i in rel['Arg2']['TokenList']],
                      [words[i[2]] for i in rel['Connective']['TokenList']],
-                     rel['Sense'], rel['Type']) for rel in doc_pdtb
+                     [convert_sense(s, sense_level) for s in rel['Sense']], rel['Type']) for rel in doc_pdtb
         ]
         docs.append(Document(doc_id=doc_id, sentences=sents, relations=relations))
     return docs
@@ -65,6 +67,12 @@ def load_parsed_conll_dataset(conll_path: str, simple_connectives=False) -> List
 
 def load_bert_conll_dataset(conll_path: str, simple_connectives=False, limit=0, cache_dir='',
                             bert_model='bert-base-cased', sense_level=-1) -> List[Document]:
+    docs = load_parsed_conll_dataset(conll_path, simple_connectives, limit, sense_level)
+    docs = load_bert_embeddings(docs, cache_dir, bert_model)
+    return docs
+
+
+def load_bert_embeddings(docs: List[Document], cache_dir='', bert_model='bert-base-cased') -> List[Document]:
     if cache_dir and os.path.exists(cache_dir):
         doc_embeddings = joblib.load(cache_dir)
         tokenizer = None
@@ -75,86 +83,26 @@ def load_bert_conll_dataset(conll_path: str, simple_connectives=False, limit=0, 
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         model = TFAutoModel.from_pretrained(bert_model)
         preloaded = False
-    parses_path = os.path.join(conll_path, 'parses.json')
-    relations_path = os.path.join(conll_path, 'relations.json')
-    docs = []
-    parses = json.loads(open(parses_path, 'r').read())
-    pdtb = defaultdict(list)
-    for relation in [json.loads(s) for s in open(relations_path, 'r').readlines()]:
-        pdtb[relation['DocID']].append(relation)
-    for doc_id, doc in tqdm(parses.items(), total=len(parses)):
-        if limit > 0 and len(docs) > limit:
-            break
-        words = []
-        token_offset = 0
-        sents = []
-        for sent_i, sent in enumerate(doc['sentences']):
-            sent_words = [
-                Token(token_offset + w_i, sent_i, w_i, t['CharacterOffsetBegin'], t['CharacterOffsetEnd'], surface,
-                      t['PartOfSpeech'])
-                for w_i, (surface, t) in enumerate(sent['words'])
-            ]
-            words.extend(sent_words)
+    for doc in docs:
+        for sent_i, sent in enumerate(doc.sentences):
             if preloaded:
-                embeddings = doc_embeddings[doc_id][token_offset:token_offset + len(sent_words)]
+                token_offset = sent.tokens[0].idx
+                embeddings = doc_embeddings[doc.doc_id][token_offset:token_offset + len(sent.tokens)]
             else:
-                embeddings = get_sentence_embeddings(sent_words, tokenizer, model)
-            sents.append(Sentence(sent_words, embeddings=embeddings))
-            token_offset += len(sent_words)
-        doc_pdtb = pdtb.get(doc_id, [])
-        if simple_connectives:
-            connective_head(doc_pdtb)
-        relations = [
-            Relation([words[i[2]] for i in rel['Arg1']['TokenList']],
-                     [words[i[2]] for i in rel['Arg2']['TokenList']],
-                     [words[i[2]] for i in rel['Connective']['TokenList']],
-                     [convert_sense(s, sense_level) for s in rel['Sense']], rel['Type']) for rel in doc_pdtb
-        ]
-        doc = Document(doc_id=doc_id, sentences=sents, relations=relations)
-        if cache_dir and not preloaded:
-            doc_embeddings[doc.doc_id] = doc.get_embeddings()
-        docs.append(doc)
+                embeddings = get_sentence_embeddings(sent.tokens, tokenizer, model)
+            sent.embeddings = embeddings
     if cache_dir and not preloaded:
         joblib.dump(doc_embeddings, cache_dir)
     return docs
 
 
 def load_embeddings_conll_dataset(conll_path: str, embedder: 'TokenSentenceEmbedder', simple_connectives=False, limit=0,
-                                  ) -> List[Document]:
-    parses_path = os.path.join(conll_path, 'parses.json')
-    relations_path = os.path.join(conll_path, 'relations.json')
-    docs = []
-    parses = json.loads(open(parses_path, 'r').read())
-    pdtb = defaultdict(list)
-    for relation in [json.loads(s) for s in open(relations_path, 'r').readlines()]:
-        pdtb[relation['DocID']].append(relation)
-    for doc_id, doc in tqdm(parses.items(), total=len(parses)):
-        if limit > 0 and len(docs) > limit:
-            break
-        words = []
-        token_offset = 0
-        sents = []
-        for sent_i, sent in enumerate(doc['sentences']):
-            sent_words = [
-                Token(token_offset + w_i, sent_i, w_i, t['CharacterOffsetBegin'], t['CharacterOffsetEnd'], surface,
-                      t['PartOfSpeech'])
-                for w_i, (surface, t) in enumerate(sent['words'])
-            ]
-            words.extend(sent_words)
-            embeddings = embedder.get_sentence_vector_embeddings(sent_words)
-            sents.append(Sentence(sent_words, embeddings=embeddings))
-            token_offset += len(sent_words)
-        doc_pdtb = pdtb.get(doc_id, [])
-        if simple_connectives:
-            connective_head(doc_pdtb)
-        relations = [
-            Relation([words[i[2]] for i in rel['Arg1']['TokenList']],
-                     [words[i[2]] for i in rel['Arg2']['TokenList']],
-                     [words[i[2]] for i in rel['Connective']['TokenList']],
-                     rel['Sense'], rel['Type']) for rel in doc_pdtb
-        ]
-        doc = Document(doc_id=doc_id, sentences=sents, relations=relations)
-        docs.append(doc)
+                                  sense_level=-1) -> List[Document]:
+    docs = load_parsed_conll_dataset(conll_path, simple_connectives, limit, sense_level)
+    for doc in docs:
+        for sent_i, sent in enumerate(doc.sentences):
+            embeddings = embedder.get_sentence_vector_embeddings(sent.tokens)
+            sent.embeddings = embeddings
     return docs
 
 
