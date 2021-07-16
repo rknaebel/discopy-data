@@ -40,7 +40,7 @@ class Token:
 
     def __eq__(self, other: 'Token'):
         return all([
-            self.idx == other.idx, self.surface == other.surface, self.upos == other.upos,
+            self.idx == other.idx, self.surface == other.surface,
             self.sent_idx == other.sent_idx, self.local_idx == other.local_idx, self.offset_begin == other.offset_begin,
             self.offset_end == other.offset_end
         ])
