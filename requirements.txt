@@ -1,0 +1,5 @@
+numpy>=1.18.0
+nltk>=3.4
+joblib
+transformers==4.2.1
+trankit==1.0.1
