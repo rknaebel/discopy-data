@@ -85,6 +85,7 @@ def load_bert_embeddings(docs: List[Document], cache_dir='', bert_model='bert-ba
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         model = TFAutoModel.from_pretrained(bert_model)
         preloaded = False
+    logging.info(f'Use preloaded embeddings: {preloaded}')
     for doc in tqdm(docs):
         doc_embedding = []
         for sent_i, sent in enumerate(doc.sentences):
@@ -95,7 +96,8 @@ def load_bert_embeddings(docs: List[Document], cache_dir='', bert_model='bert-ba
                 embeddings = get_sentence_embeddings(sent.tokens, tokenizer, model)
                 doc_embedding.append(embeddings)
             sent.embeddings = embeddings
-        doc_embeddings[doc.doc_id] = np.concatenate(doc_embedding)
+        if doc_embedding:
+            doc_embeddings[doc.doc_id] = np.concatenate(doc_embedding)
     if cache_dir and not preloaded:
         joblib.dump(doc_embeddings, cache_dir)
     return docs
