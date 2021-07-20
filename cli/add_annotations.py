@@ -1,7 +1,7 @@
+import json
 import sys
 
 import click
-import ujson as json
 
 import discopy_data.dataset.argessay
 import discopy_data.dataset.pdtb
@@ -18,11 +18,11 @@ document_annotations = {
 @click.argument('annotations', type=str)
 @click.option('-s', '--src', default='-', type=click.File('r'))
 @click.option('-o', '--tgt', default='-', type=click.File('w'))
-@click.option('--simple-connective', is_flag=True)
+@click.option('--simple-connectives', is_flag=True)
 @click.option('--sense-level', default=-1, type=int)
-def main(corpus, annotations, src, tgt, simple_connective, sense_level):
+def main(corpus, annotations, src, tgt, simple_connectives, sense_level):
     options = {
-        'simple_connectives': simple_connective,
+        'simple_connectives': simple_connectives,
         'sense_level': sense_level,
     }
     update_annotations = document_annotations[corpus](annotations, options)

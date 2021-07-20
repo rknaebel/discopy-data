@@ -1,7 +1,7 @@
+import json
 import re
 import zipfile
 
-import ujson as json
 from tqdm import tqdm
 
 WS = re.compile(r'[\s\xa0]+')

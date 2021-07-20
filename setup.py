@@ -13,5 +13,12 @@ setup(name='discopy-data-rknaebel',
       author_email='rknaebel@uni-potsdam.de',
       license='MIT',
       packages=find_packages(),
+      install_requires=[
+            'numpy>=1.18.0',
+            'nltk>=3.4',
+            'joblib',
+            'tensorflow>=2.1.0',
+            'transformers==4.2.1',
+      ],
       zip_safe=False,
       )

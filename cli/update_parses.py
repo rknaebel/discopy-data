@@ -1,8 +1,8 @@
+import json
 import os
 import sys
 
 import click
-import ujson as json
 
 from discopy_data.data.doc import Document
 from discopy_data.data.update import get_constituent_parse, get_dependency_parse

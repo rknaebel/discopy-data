@@ -1,11 +1,11 @@
 import datetime
+import json
 import os
 import sys
 from typing import List
 
 import click
 import trankit
-import ujson as json
 from tqdm import tqdm
 
 import discopy_data.dataset.anthology
