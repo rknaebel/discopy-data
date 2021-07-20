@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from collections import defaultdict
 from typing import List
@@ -68,6 +69,7 @@ def load_parsed_conll_dataset(conll_path: str, simple_connectives=False, limit=0
 def load_bert_conll_dataset(conll_path: str, simple_connectives=False, limit=0, cache_dir='',
                             bert_model='bert-base-cased', sense_level=-1) -> List[Document]:
     docs = load_parsed_conll_dataset(conll_path, simple_connectives, limit, sense_level)
+    logging.info(f'Load {bert_model} Embeddings')
     docs = load_bert_embeddings(docs, cache_dir, bert_model)
     return docs
 
@@ -83,14 +85,17 @@ def load_bert_embeddings(docs: List[Document], cache_dir='', bert_model='bert-ba
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         model = TFAutoModel.from_pretrained(bert_model)
         preloaded = False
-    for doc in docs:
+    for doc in tqdm(docs):
+        doc_embedding = []
         for sent_i, sent in enumerate(doc.sentences):
             if preloaded:
                 token_offset = sent.tokens[0].idx
                 embeddings = doc_embeddings[doc.doc_id][token_offset:token_offset + len(sent.tokens)]
             else:
                 embeddings = get_sentence_embeddings(sent.tokens, tokenizer, model)
+                doc_embedding.append(embeddings)
             sent.embeddings = embeddings
+        doc_embeddings[doc.doc_id] = np.concatenate(doc_embedding)
     if cache_dir and not preloaded:
         joblib.dump(doc_embeddings, cache_dir)
     return docs
