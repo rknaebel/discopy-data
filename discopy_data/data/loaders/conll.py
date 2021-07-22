@@ -7,7 +7,6 @@ from typing import List
 import joblib
 import numpy as np
 from tqdm import tqdm
-from transformers import AutoTokenizer, TFAutoModel
 
 from discopy_data.data.conn_head_mapper import ConnHeadMapper
 from discopy_data.data.doc import Document
@@ -81,6 +80,7 @@ def load_bert_embeddings(docs: List[Document], cache_dir='', bert_model='bert-ba
         model = None
         preloaded = True
     else:
+        from transformers import AutoTokenizer, TFAutoModel
         doc_embeddings = {}
         tokenizer = AutoTokenizer.from_pretrained(bert_model)
         model = TFAutoModel.from_pretrained(bert_model)
