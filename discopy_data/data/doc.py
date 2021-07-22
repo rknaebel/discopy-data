@@ -1,5 +1,4 @@
 import json
-import sys
 from typing import List
 
 import numpy as np
@@ -46,8 +45,6 @@ class Document:
                            dep=sent_words[t_i]
                            ) for t_i, t in enumerate(sent.get('dependencies', []))
                 ]
-                if not dependencies:
-                    sys.stderr.write(f"No dependencies in {doc['docID']}-{sent_i}")
             else:
                 dependencies = []
             sents.append(Sentence(sent_words, dependencies=dependencies, parsetree=sent.get('parsetree')))

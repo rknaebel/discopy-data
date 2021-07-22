@@ -1,8 +1,6 @@
 import os
 from typing import List
 
-from transformers import AutoTokenizer, TFAutoModel
-
 from discopy_data.nn.bert import get_sentence_embeddings
 from .doc import Document
 from .sentence import DepRel
@@ -53,6 +51,7 @@ def update_dataset_parses(docs: List[Document], constituent_parser='crf-con-en',
 
 
 def update_dataset_embeddings(docs: List[Document], bert_model='bert-base-cased'):
+    from transformers import AutoTokenizer, TFAutoModel
     tokenizer = AutoTokenizer.from_pretrained(bert_model)
     model = TFAutoModel.from_pretrained(bert_model)
     for doc in docs:
