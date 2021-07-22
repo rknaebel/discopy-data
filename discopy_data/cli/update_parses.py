@@ -11,16 +11,18 @@ from discopy_data.data.update import get_constituent_parse, get_dependency_parse
 @click.command()
 @click.option('-s', '--src', default='-', type=click.File('r'))
 @click.option('-o', '--tgt', default='-', type=click.File('w'))
-@click.option('-c', '--constituent-parser', default='crf-con-en', type=str)
-@click.option('-d', '--dependency-parser', default='biaffine-dep-en', type=str)
+@click.option('--constituent-parser', default='crf-con-en', type=str)
+@click.option('--dependency-parser', default='biaffine-dep-en', type=str)
+@click.option('-c', '--constituents', is_flag=True)
+@click.option('-d', '--dependencies', is_flag=True)
 @click.option('--cuda', default='', type=str)
-def main(src, tgt, constituent_parser, dependency_parser, cuda):
+def main(src, tgt, constituent_parser, dependency_parser, constituents, dependencies, cuda):
     os.environ['CUDA_VISIBLE_DEVICES'] = cuda
     import supar
     sys.stderr.write('SUPAR load constiuent parser!\n')
-    cparser = supar.Parser.load(constituent_parser) if constituent_parser else None
+    cparser = supar.Parser.load(constituent_parser) if constituents else None
     sys.stderr.write('SUPAR load dependency parser!\n')
-    dparser = supar.Parser.load(dependency_parser) if dependency_parser else None
+    dparser = supar.Parser.load(dependency_parser) if dependencies else None
     for line in src:
         doc = Document.from_json(json.loads(line))
         for sent_i, sent in enumerate(doc.sentences):
