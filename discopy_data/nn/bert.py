@@ -15,6 +15,17 @@ simple_map = {
 }
 
 
+def get_sentence_embedder(bert_model):
+    from transformers import AutoTokenizer, TFAutoModel
+    tokenizer = AutoTokenizer.from_pretrained(bert_model)
+    model = TFAutoModel.from_pretrained(bert_model)
+
+    def helper(tokens: List[Token]):
+        return get_sentence_embeddings(tokens, tokenizer, model)
+
+    return helper
+
+
 def get_sentence_embeddings(tokens: List[Token], tokenizer, model):
     subtokens = [tokenizer.tokenize(simple_map.get(t.surface, t.surface)) for t in tokens]
     lengths = [len(s) for s in subtokens]
