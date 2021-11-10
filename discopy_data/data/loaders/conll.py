@@ -13,7 +13,7 @@ from discopy_data.data.doc import Document
 from discopy_data.data.relation import Relation
 from discopy_data.data.sentence import DepRel, Sentence
 from discopy_data.data.token import Token
-from discopy_data.nn.bert import get_sentence_embeddings, simple_map
+from discopy_data.nn.bert import simple_map, get_doc_sentence_embeddings
 
 
 def convert_sense(s, lvl):
@@ -82,22 +82,25 @@ def load_bert_embeddings(docs: List[Document], cache_dir='', bert_model='bert-ba
     else:
         from transformers import AutoTokenizer, TFAutoModel
         doc_embeddings = {}
-        tokenizer = AutoTokenizer.from_pretrained(bert_model)
+        if bert_model.startswith('roberta'):
+            tokenizer = AutoTokenizer.from_pretrained(bert_model, add_prefix_space=True)
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(bert_model)
         model = TFAutoModel.from_pretrained(bert_model)
         preloaded = False
     logging.info(f'Use preloaded embeddings: {preloaded}')
     for doc in tqdm(docs):
-        doc_embedding = []
+        if preloaded:
+            doc_embedding = doc_embeddings[doc.doc_id]
+        else:
+            last_hidden_only = bert_model.startswith('xlm-')
+            doc_embedding = get_doc_sentence_embeddings(doc.sentences, tokenizer, model,
+                                                        last_hidden_only=last_hidden_only)
+            doc_embeddings[doc.doc_id] = doc_embedding
         for sent_i, sent in enumerate(doc.sentences):
-            if preloaded:
-                token_offset = sent.tokens[0].idx
-                embeddings = doc_embeddings[doc.doc_id][token_offset:token_offset + len(sent.tokens)]
-            else:
-                embeddings = get_sentence_embeddings(sent.tokens, tokenizer, model)
-                doc_embedding.append(embeddings)
+            token_offset = sent.tokens[0].idx
+            embeddings = doc_embedding[token_offset:token_offset + len(sent.tokens)]
             sent.embeddings = embeddings
-        if doc_embedding:
-            doc_embeddings[doc.doc_id] = np.concatenate(doc_embedding)
     if cache_dir and not preloaded:
         joblib.dump(doc_embeddings, cache_dir)
     return docs
