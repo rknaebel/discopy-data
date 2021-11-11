@@ -1,4 +1,8 @@
+import re
+import string
 from typing import List
+
+RE_PUNCT = re.compile(r'^[\s{}]+$'.format(re.escape(string.punctuation)))
 
 
 class Token:
@@ -49,7 +53,7 @@ class Token:
 class TokenSpan:
 
     def __init__(self, tokens):
-        self.tokens: List[Token] = tokens
+        self.tokens: List[Token] = list(tokens)
 
     def get_sentence_idxs(self):
         return sorted(set(t.sent_idx for t in self.tokens))
@@ -72,6 +76,9 @@ class TokenSpan:
 
     def overlap(self, other: 'TokenSpan') -> int:
         return sum(int(i == j) for i in self.tokens for j in other.tokens)
+
+    def without_punct(self):
+        return TokenSpan(t for t in self.tokens if not RE_PUNCT.match(t.surface))
 
     def add(self, token: Token):
         self.tokens.append(token)

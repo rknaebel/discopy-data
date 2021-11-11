@@ -62,6 +62,12 @@ class Relation:
     def is_empty(self):
         return len(self.conn) == len(self.arg1) == len(self.arg2) == 0
 
+    def is_valid(self):
+        return all(len(part) > 0 for part in [self.arg1, self.arg2])
+
+    def has_connective(self):
+        return len(self.conn) > 0
+
     def distance(self, other):
         d_args = jaccard_distance(self.arg1 | self.arg2, other.arg1 | other.arg2)
         d_arg1 = jaccard_distance(self.arg1, other.arg1)
