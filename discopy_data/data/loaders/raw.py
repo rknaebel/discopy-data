@@ -3,7 +3,6 @@ import os
 import sys
 from typing import List
 
-import trankit
 from tqdm import tqdm
 
 from discopy_data.data.doc import Document
@@ -12,6 +11,7 @@ from discopy_data.data.token import Token
 
 
 def load_parser(use_gpu=False):
+    import trankit
     tmp_stdout = sys.stdout
     sys.stdout = sys.stderr
     parser = trankit.Pipeline('english', cache_dir=os.path.expanduser('~/.trankit/'), gpu=use_gpu)
@@ -68,4 +68,39 @@ def load_texts(texts: List[str], tokenize_only=False) -> List[Document]:
             },
             'text': text,
             'sentences': sentences
+        }, load_relations=False)
+
+
+def load_texts_fast(texts: List[str], tokenize_only=True) -> List[Document]:
+    from nltk.tokenize import sent_tokenize
+    from nltk.tokenize import TreebankWordTokenizer
+
+    for text_i, text in tqdm(enumerate(texts)):
+        sentence_splits = [len(s) for s in sent_tokenize(text)]
+        sents = []
+        sent_i = 0
+        w_i = 0
+        words = []
+        sent_offset = 0
+        for tok_i, (tok_start, tok_end) in enumerate(TreebankWordTokenizer().span_tokenize(text)):
+            form = text[tok_start:tok_end]
+            words.append(Token(tok_i, sent_i, w_i, tok_start, tok_end, form))
+            w_i += 1
+            if tok_end >= (sent_offset + sentence_splits[sent_i]):
+                sents.append(Sentence(words).to_json())
+                sent_i += 1
+                if sent_i >= len(sentence_splits):
+                    break
+                w_i = 0
+                sent_offset += sentence_splits[sent_i]
+
+        yield Document.from_json({
+            'docID': hash(text),
+            'meta': {
+                'fileID': f'raw_{text_i:05}',
+                'corpus': 'raw',
+                'created': datetime.datetime.now().isoformat(),
+            },
+            'text': text,
+            'sentences': sents
         }, load_relations=False)
