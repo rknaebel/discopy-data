@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List
 
 from discopy_data.nn.bert import get_sentence_embeddings
@@ -12,10 +13,13 @@ def get_constituent_parse(constituent_parser, inputs):
         if ptree is not None:
             parsetree = ptree._pformat_flat('', '()', False)
         else:
-            print("empty tree")
+            sys.stderr.write("empty tree")
             parsetree = ""
     except Exception as e:
-        print(e)
+        # sys.stderr.write(e)
+        parsetree = ""
+    except IndexError as e:
+        # sys.stderr.write(e)
         parsetree = ""
     return parsetree
 
@@ -30,7 +34,7 @@ def get_dependency_parse(dependency_parser, inputs, words):
                    ) for dep, (head, rel) in enumerate(zip(deps.arcs, deps.rels))
         ]
     except Exception as e:
-        print(e)
+        sys.stderr.write(e)
         dependencies = []
     return dependencies
 

@@ -31,7 +31,7 @@ def load_parsed_conll_dataset(conll_path: str, simple_connectives=False, limit=0
     pdtb = defaultdict(list)
     for relation in [json.loads(s) for s in open(relations_path, 'r').readlines()]:
         pdtb[relation['DocID']].append(relation)
-    for doc_id, doc in tqdm(parses.items(), total=len(parses)):
+    for doc_id, doc in tqdm(parses.items(), total=len(parses), mininterval=20, maxinterval=60):
         if 0 < limit < len(docs):
             break
         words = []
@@ -89,7 +89,7 @@ def load_bert_embeddings(docs: List[Document], cache_dir='', bert_model='bert-ba
         model = TFAutoModel.from_pretrained(bert_model)
         preloaded = False
     logging.info(f'Use preloaded embeddings: {preloaded}')
-    for doc in tqdm(docs):
+    for doc in tqdm(docs, desc='Load Contextualized Embeddings', mininterval=20, maxinterval=60):
         if preloaded:
             doc_embedding = doc_embeddings[doc.doc_id]
         else:

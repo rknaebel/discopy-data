@@ -3,6 +3,7 @@ import os
 import sys
 
 import click
+from tqdm import tqdm
 
 from discopy_data.data.doc import Document
 from discopy_data.data.update import get_constituent_parse, get_dependency_parse
@@ -23,7 +24,7 @@ def main(src, tgt, constituent_parser, dependency_parser, constituents, dependen
     cparser = supar.Parser.load(constituent_parser) if constituents else None
     sys.stderr.write('SUPAR load dependency parser!\n')
     dparser = supar.Parser.load(dependency_parser) if dependencies else None
-    for line in src:
+    for line in tqdm(src):
         doc = Document.from_json(json.loads(line))
         for sent_i, sent in enumerate(doc.sentences):
             inputs = [(t.surface, t.upos) for t in sent.tokens]

@@ -11,11 +11,16 @@ from tqdm import tqdm
 import discopy_data.dataset.anthology
 import discopy_data.dataset.argessay
 import discopy_data.dataset.bbc
+import discopy_data.dataset.because
+import discopy_data.dataset.biocause
+import discopy_data.dataset.biodrb
 import discopy_data.dataset.global_voices
 import discopy_data.dataset.pdtb
+import discopy_data.dataset.pdtb3
 import discopy_data.dataset.press_gov
 import discopy_data.dataset.short_stories
 import discopy_data.dataset.ted
+import discopy_data.dataset.tedmdb
 import discopy_data.dataset.un_debates
 from discopy_data.data.doc import Document
 from discopy_data.data.sentence import Sentence, DepRel
@@ -27,6 +32,7 @@ document_extractor = {
     'bbc': discopy_data.dataset.bbc.extract,
     'gv': discopy_data.dataset.global_voices.extract,
     'pdtb': discopy_data.dataset.pdtb.extract,
+    'pdtb3': discopy_data.dataset.pdtb3.extract,
     'press-gov': discopy_data.dataset.press_gov.extract,
     'short-stories': discopy_data.dataset.short_stories.extract,
     'ted': discopy_data.dataset.ted.extract,
@@ -111,12 +117,16 @@ def get_parsed_sentences(parser, doc) -> List[dict]:
 @click.argument('src', type=click.Path('r'))
 @click.option('-o', '--tgt', default='-', type=click.File('w'))
 @click.option('-l', '--limit', default=0, type=int)
+@click.option('-s', '--skip', default=0, type=int)
 @click.option('--use-gpu', is_flag=True)
-def main(corpus, src, tgt, limit, use_gpu):
+def main(corpus, src, tgt, limit, skip, use_gpu):
     parser = load_parser(use_gpu=use_gpu)
     t = tqdm()
     doc_i = 0
     for doc in document_extractor[corpus](src):
+        if skip > 0:
+            skip -= 1
+            continue
         if limit and doc_i >= limit:
             break
         if 'docID' not in doc:

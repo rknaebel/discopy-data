@@ -4,13 +4,13 @@ with open("README.md", "r") as fh:
       long_description = fh.read()
 
 setup(name='discopy-data-rknaebel',
-      version='1.0.1',
+      version='1.0.2',
       description='Data and Structures for Neural Discourse Parsing',
       long_description=long_description,
       long_description_content_type="text/markdown",
       url='http://github.com/rknaebel/discopy-data',
       author='Rene Knaebel',
-      author_email='rknaebel@uni-potsdam.de',
+      author_email='rene.knaebel@uni-potsdam.de',
       license='MIT',
       packages=find_packages(),
       install_requires=[

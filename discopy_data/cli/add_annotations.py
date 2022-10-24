@@ -2,14 +2,17 @@ import json
 import sys
 
 import click
+from tqdm import tqdm
 
 import discopy_data.dataset.argessay
 import discopy_data.dataset.pdtb
+import discopy_data.dataset.pdtb3
 from discopy_data.data.doc import Document
 
 document_annotations = {
     'args-essay': discopy_data.dataset.argessay.update_annotations,
     'pdtb': discopy_data.dataset.pdtb.update_annotations,
+    'pdtb3': discopy_data.dataset.pdtb3.update_annotations,
 }
 
 
@@ -26,7 +29,7 @@ def main(corpus, annotations, src, tgt, simple_connectives, sense_level):
         'sense_level': sense_level,
     }
     update_annotations = document_annotations[corpus](annotations, options)
-    for line in src:
+    for line in tqdm(src):
         if not line.strip():
             continue
         doc = Document.from_json(json.loads(line))
