@@ -1,5 +1,7 @@
 numpy>=1.18.0
+pandas==1.3.5
 nltk>=3.4
-joblib
+pybtex==0.24.0
+joblib==1.1.0
+tensorflow==2.1.0
 transformers==4.8.1
-trankit==1.1.0

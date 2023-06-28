@@ -69,8 +69,8 @@ class Document:
     def get_embedding_dim(self) -> int:
         return int(self.sentences[0].embeddings.shape[-1])
 
-    def with_relations(self, relations):
-        return Document(self.doc_id, self.sentences, relations, meta=self.meta)
+    def with_relations(self, relations: List[Relation]):
+        return Document(self.doc_id, self.sentences, list(relations), meta=self.meta)
 
     def __str__(self):
         return json.dumps(self.to_json(), indent=2)
