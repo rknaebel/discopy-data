@@ -9,12 +9,12 @@ from .token import Token
 
 
 class Document:
-    def __init__(self, doc_id, sentences: List[Sentence], relations: List[Relation], meta: dict = None):
+    def __init__(self, doc_id, sentences: List[Sentence], relations: List[Relation], meta: dict = None, text: str = ""):
         self.doc_id = doc_id
         self.meta = meta or {}
         self.sentences: List[Sentence] = sentences
         self.relations: List[Relation] = relations
-        self.text = '\n'.join([s.get_text() for s in self.sentences])
+        self.text = text if len(text) else '\n'.join([s.get_text() for s in self.sentences])
 
     def to_json(self):
         return {
@@ -58,7 +58,8 @@ class Document:
             ]
         else:
             relations = []
-        return Document(doc_id=doc['docID'], sentences=sents, relations=relations, meta=doc.get('meta'))
+        return Document(doc_id=doc['docID'], sentences=sents, relations=relations, meta=doc.get('meta'),
+                        text=doc.get('text', ''))
 
     def get_tokens(self):
         return [token for sent in self.sentences for token in sent.tokens]
@@ -70,7 +71,7 @@ class Document:
         return int(self.sentences[0].embeddings.shape[-1])
 
     def with_relations(self, relations: List[Relation]):
-        return Document(self.doc_id, self.sentences, list(relations), meta=self.meta)
+        return Document(self.doc_id, self.sentences, list(relations), meta=self.meta, text=self.text)
 
     def __str__(self):
         return json.dumps(self.to_json(), indent=2)
